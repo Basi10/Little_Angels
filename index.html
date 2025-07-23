@@ -454,17 +454,14 @@
         <div id="client-info" class="page">
             <div class="page-header">
                 <h1>Client Information</h1>
-                <p>Search and view client details</p>
+                <p>Search and view client details by phone number</p>
             </div>
 
             <div class="client-search">
-                <label for="search-name">Search by Name:</label>
-                <input type="text" id="search-name" class="search-input" placeholder="Enter client name...">
-
-                <label for="search-phone">Search by Phone:</label>
+                <label for="search-phone">Search by Phone Number:</label>
                 <div class="phone-container">
                     <span class="phone-prefix">+251</span>
-                    <input type="tel" id="search-phone" maxlength="9" pattern="\d{9}" placeholder="912345678">
+                    <input type="tel" id="search-phone" maxlength="9" pattern="\d{9}" placeholder="912345678" required>
                 </div>
 
                 <button type="button" onclick="searchClient()">Search Client</button>
@@ -718,11 +715,16 @@
 
         // Client search functionality
         async function searchClient() {
-            const name = document.getElementById('search-name').value.trim();
             const phone = document.getElementById('search-phone').value.trim();
 
-            if (!name && !phone) {
-                alert('Please enter either a name or phone number to search.');
+            if (!phone) {
+                alert('Please enter a phone number to search.');
+                return;
+            }
+
+            // Validate phone number format
+            if (!/^\d{9}$/.test(phone)) {
+                alert('Phone number must be exactly 9 digits.');
                 return;
             }
 
@@ -730,10 +732,9 @@
             resultsDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">Searching...</div>';
 
             try {
-                // Build query parameters
+                // Build query parameters with only phone
                 const params = new URLSearchParams();
-                if (name) params.append('name', name);
-                if (phone) params.append('phone', phone);
+                params.append('phone', phone);
 
                 const response = await fetch(`${BACKEND_URL}/search-client?${params}`);
                 const result = await response.json();
@@ -761,49 +762,107 @@
                 return;
             }
 
+            // Display first client as editable form (assuming search by phone returns unique client)
+            const client = result.clients[0];
+            displayEditableClientForm(client, result.message);
+        }
+
+        function displayEditableClientForm(client, message) {
+            const resultsDiv = document.getElementById('client-results');
+
+            // Store original phone for identification
+            const originalPhone = client.main_phone;
+
             let html = `
                 <div style="background: #e8f5e8; color: #2e7d32; padding: 15px; border-radius: 8px; border: 1px solid #2e7d32; margin-bottom: 20px;">
-                    ${result.message}
+                    ${message}
                 </div>
-                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
-                    <thead>
-                        <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                            <th style="padding: 15px; text-align: left; font-weight: 600;">Name</th>
-                            <th style="padding: 15px; text-align: left; font-weight: 600;">Phone</th>
-                            <th style="padding: 15px; text-align: left; font-weight: 600;">Alt Phone</th>
-                            <th style="padding: 15px; text-align: left; font-weight: 600;">Package</th>
-                            <th style="padding: 15px; text-align: left; font-weight: 600;">Total</th>
-                            <th style="padding: 15px; text-align: left; font-weight: 600;">Initial</th>
-                            <th style="padding: 15px; text-align: left; font-weight: 600;">Remaining</th>
-                            <th style="padding: 15px; text-align: left; font-weight: 600;">Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+                
+                <form id="editClientForm" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="color: #333; margin: 0;">Client Information</h3>
+                        <div>
+                            <button type="button" id="editBtn" onclick="enableEditing()" style="background: #ffc107; color: #000; padding: 8px 16px; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer;">Edit</button>
+                            <button type="button" id="saveBtn" onclick="saveClientChanges()" style="background: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer; display: none;">Save</button>
+                            <button type="button" id="cancelBtn" onclick="cancelEditing()" style="background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; display: none;">Cancel</button>
+                        </div>
+                    </div>
 
-            result.clients.forEach(client => {
-                const packageName = client.package ? client.package.replace('_', ' ').toUpperCase() : 'N/A';
-                const altPhone = client.alt_phone ? `+251${client.alt_phone}` : 'N/A';
-                const registrationDate = client.date_registered || client.submitted_at?.split('T')[0] || 'N/A';
-                const interests = Array.isArray(client.interests) ? client.interests.join(', ') : 'None';
-
-                html += `
-                    <tr style="border-bottom: 1px solid #e9ecef;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='white'">
-                        <td style="padding: 15px;">${client.user_name || 'N/A'}</td>
-                        <td style="padding: 15px;">+251${client.main_phone || 'N/A'}</td>
-                        <td style="padding: 15px;">${altPhone}</td>
-                        <td style="padding: 15px;">${packageName}</td>
-                        <td style="padding: 15px;">${client.total || 'N/A'} ETB</td>
-                        <td style="padding: 15px;">${client.initial || 'N/A'} ETB</td>
-                        <td style="padding: 15px;">${client.remaining || 'N/A'} ETB</td>
-                        <td style="padding: 15px;">${registrationDate}</td>
-                    </tr>
-                `;
-            });
-
-            html += `
-                    </tbody>
-                </table>
+                    <input type="hidden" id="originalPhone" value="${originalPhone}">
+                    
+                    <fieldset style="border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #fafafa;">
+                        <legend style="font-weight: 600; color: #495057; padding: 0 15px; font-size: 1.1rem;">Personal Information</legend>
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Name:</label>
+                        <input type="text" id="edit_name" value="${client.user_name || ''}" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Gender:</label>
+                        <div style="margin: 10px 0;">
+                            <label style="display: inline-block; margin-right: 20px;"><input type="radio" name="edit_gender" value="male" ${client.gender === 'male' ? 'checked' : ''} disabled> Male</label>
+                            <label style="display: inline-block;"><input type="radio" name="edit_gender" value="female" ${client.gender === 'female' ? 'checked' : ''} disabled> Female</label>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px;">
+                            <div style="flex: 1;">
+                                <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Age (Years):</label>
+                                <input type="number" id="edit_age_years" value="${client.age_years || ''}" min="0" max="120" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Age (Months):</label>
+                                <input type="number" id="edit_age_months" value="${client.age_months || ''}" min="0" max="11" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
+                            </div>
+                        </div>
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Main Phone Number:</label>
+                        <div style="display: flex; align-items: center;">
+                            <span style="background-color: #e9ecef; padding: 12px 15px; border: 2px solid #e9ecef; border-right: none; border-radius: 6px 0 0 6px; font-weight: 600; color: #495057;">+251</span>
+                            <input type="tel" id="edit_main_phone" value="${client.main_phone || ''}" maxlength="9" pattern="\\d{9}" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-left: none; border-radius: 0 6px 6px 0; font-size: 14px; background-color: #f8f9fa;">
+                        </div>
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Alternate Phone Number:</label>
+                        <div style="display: flex; align-items: center;">
+                            <span style="background-color: #e9ecef; padding: 12px 15px; border: 2px solid #e9ecef; border-right: none; border-radius: 6px 0 0 6px; font-weight: 600; color: #495057;">+251</span>
+                            <input type="tel" id="edit_alt_phone" value="${client.alt_phone || ''}" maxlength="9" pattern="\\d{9}" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-left: none; border-radius: 0 6px 6px 0; font-size: 14px; background-color: #f8f9fa;">
+                        </div>
+                    </fieldset>
+                    
+                    <fieldset style="border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #fafafa;">
+                        <legend style="font-weight: 600; color: #495057; padding: 0 15px; font-size: 1.1rem;">Package Information</legend>
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Package:</label>
+                        <select id="edit_package" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
+                            <option value="">-- Select a package --</option>
+                            <option value="diamond" ${client.package === 'diamond' ? 'selected' : ''}>Diamond Package - 39,000 ETB</option>
+                            <option value="gold" ${client.package === 'gold' ? 'selected' : ''}>Gold Package - 29,000 ETB</option>
+                            <option value="event_no_video" ${client.package === 'event_no_video' ? 'selected' : ''}>Event Package (No Video) - 59,000 ETB</option>
+                            <option value="event_with_video" ${client.package === 'event_with_video' ? 'selected' : ''}>Event Package (With Video) - 79,000 ETB</option>
+                            <option value="platinum" ${client.package === 'platinum' ? 'selected' : ''}>Platinum Package - 59,000 ETB</option>
+                            <option value="softcopy" ${client.package === 'softcopy' ? 'selected' : ''}>Softcopy - 19,000 ETB</option>
+                        </select>
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Choice:</label>
+                        <select id="edit_choice" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
+                            <option value="option1" ${client.user_choice === 'option1' ? 'selected' : ''}>Mesk</option>
+                            <option value="option2" ${client.user_choice === 'option2' ? 'selected' : ''}>Ye bet wist program</option>
+                            <option value="option3" ${client.user_choice === 'option3' ? 'selected' : ''}>Studio</option>
+                        </select>
+                    </fieldset>
+                    
+                    <fieldset style="border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #fafafa;">
+                        <legend style="font-weight: 600; color: #495057; padding: 0 15px; font-size: 1.1rem;">Payment Information</legend>
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Total Payment:</label>
+                        <input type="number" id="edit_total" value="${client.total || ''}" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Initial Payment:</label>
+                        <input type="number" id="edit_initial" value="${client.initial || ''}" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
+                        
+                        <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Remaining Amount:</label>
+                        <input type="number" id="edit_remaining" value="${client.remaining || ''}" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
+                    </fieldset>
+                    
+                    <div id="edit-status-message" style="margin-top: 20px;"></div>
+                </form>
             `;
 
             resultsDiv.innerHTML = html;
@@ -1003,6 +1062,188 @@
             });
 
             tableBody.innerHTML = html;
+        }
+
+        // Client editing functions
+        let originalClientData = {};
+
+        function enableEditing() {
+            // Store original data for cancel functionality
+            originalClientData = {
+                name: document.getElementById('edit_name').value,
+                gender: document.querySelector('input[name="edit_gender"]:checked')?.value,
+                age_years: document.getElementById('edit_age_years').value,
+                age_months: document.getElementById('edit_age_months').value,
+                main_phone: document.getElementById('edit_main_phone').value,
+                alt_phone: document.getElementById('edit_alt_phone').value,
+                package: document.getElementById('edit_package').value,
+                choice: document.getElementById('edit_choice').value,
+                total: document.getElementById('edit_total').value,
+                initial: document.getElementById('edit_initial').value,
+                remaining: document.getElementById('edit_remaining').value
+            };
+
+            // Enable all form fields
+            const fields = ['edit_name', 'edit_age_years', 'edit_age_months', 'edit_main_phone', 'edit_alt_phone', 'edit_package', 'edit_choice', 'edit_total', 'edit_initial'];
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.disabled = false;
+                    field.style.backgroundColor = 'white';
+                    field.style.borderColor = '#667eea';
+                }
+            });
+
+            // Enable radio buttons
+            const genderRadios = document.querySelectorAll('input[name="edit_gender"]');
+            genderRadios.forEach(radio => {
+                radio.disabled = false;
+            });
+
+            // Add event listeners for automatic calculations
+            document.getElementById('edit_package').addEventListener('change', updateEditTotal);
+            document.getElementById('edit_total').addEventListener('input', calculateEditRemaining);
+            document.getElementById('edit_initial').addEventListener('input', calculateEditRemaining);
+
+            // Show/hide buttons
+            document.getElementById('editBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'inline-block';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+
+            // Clear any status messages
+            document.getElementById('edit-status-message').innerHTML = '';
+        }
+
+        function cancelEditing() {
+            // Restore original values
+            document.getElementById('edit_name').value = originalClientData.name;
+            document.getElementById('edit_age_years').value = originalClientData.age_years;
+            document.getElementById('edit_age_months').value = originalClientData.age_months;
+            document.getElementById('edit_main_phone').value = originalClientData.main_phone;
+            document.getElementById('edit_alt_phone').value = originalClientData.alt_phone;
+            document.getElementById('edit_package').value = originalClientData.package;
+            document.getElementById('edit_choice').value = originalClientData.choice;
+            document.getElementById('edit_total').value = originalClientData.total;
+            document.getElementById('edit_initial').value = originalClientData.initial;
+            document.getElementById('edit_remaining').value = originalClientData.remaining;
+
+            // Restore gender radio button
+            if (originalClientData.gender) {
+                document.querySelector(`input[name="edit_gender"][value="${originalClientData.gender}"]`).checked = true;
+            }
+
+            // Disable all form fields
+            disableEditFields();
+        }
+
+        function disableEditFields() {
+            const fields = ['edit_name', 'edit_age_years', 'edit_age_months', 'edit_main_phone', 'edit_alt_phone', 'edit_package', 'edit_choice', 'edit_total', 'edit_initial', 'edit_remaining'];
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.disabled = true;
+                    field.style.backgroundColor = '#f8f9fa';
+                    field.style.borderColor = '#e9ecef';
+                }
+            });
+
+            // Disable radio buttons
+            const genderRadios = document.querySelectorAll('input[name="edit_gender"]');
+            genderRadios.forEach(radio => {
+                radio.disabled = true;
+            });
+
+            // Show/hide buttons
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        function updateEditTotal() {
+            const packageSelect = document.getElementById('edit_package');
+            const totalInput = document.getElementById('edit_total');
+
+            const selectedPackage = packageSelect.value;
+            const price = packagePrices[selectedPackage] || 0;
+            totalInput.value = price;
+            calculateEditRemaining();
+        }
+
+        function calculateEditRemaining() {
+            const total = parseFloat(document.getElementById('edit_total').value) || 0;
+            const initial = parseFloat(document.getElementById('edit_initial').value) || 0;
+            const remaining = total - initial;
+            document.getElementById('edit_remaining').value = remaining >= 0 ? remaining : 0;
+        }
+
+        async function saveClientChanges() {
+            const statusDiv = document.getElementById('edit-status-message');
+            statusDiv.innerHTML = '<div style="color: #666; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">Saving changes...</div>';
+
+            try {
+                // Validate required fields
+                const name = document.getElementById('edit_name').value.trim();
+                const mainPhone = document.getElementById('edit_main_phone').value.trim();
+                const altPhone = document.getElementById('edit_alt_phone').value.trim();
+
+                if (!name || !mainPhone) {
+                    statusDiv.innerHTML = '<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Name and main phone number are required.</div>';
+                    return;
+                }
+
+                // Validate phone numbers
+                if (!/^\d{9}$/.test(mainPhone)) {
+                    statusDiv.innerHTML = '<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Main phone number must be exactly 9 digits.</div>';
+                    return;
+                }
+
+                if (altPhone && !/^\d{9}$/.test(altPhone)) {
+                    statusDiv.innerHTML = '<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Alternate phone number must be exactly 9 digits.</div>';
+                    return;
+                }
+
+                // Collect all form data
+                const updateData = {
+                    original_phone: document.getElementById('originalPhone').value,
+                    user_name: name,
+                    gender: document.querySelector('input[name="edit_gender"]:checked')?.value,
+                    age_years: document.getElementById('edit_age_years').value,
+                    age_months: document.getElementById('edit_age_months').value,
+                    main_phone: mainPhone,
+                    alt_phone: altPhone || null,
+                    package: document.getElementById('edit_package').value,
+                    user_choice: document.getElementById('edit_choice').value,
+                    total: document.getElementById('edit_total').value,
+                    initial: document.getElementById('edit_initial').value,
+                    remaining: document.getElementById('edit_remaining').value
+                };
+
+                const response = await fetch(`${BACKEND_URL}/update-client`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div style="color: #2e7d32; background: #e8f5e8; padding: 15px; border-radius: 8px; border: 1px solid #2e7d32;">Client information updated successfully!</div>';
+                    disableEditFields();
+
+                    // Update the clients table if user is viewing it
+                    const clientsPage = document.getElementById('view-clients');
+                    if (clientsPage && clientsPage.classList.contains('active')) {
+                        updateClientsTable();
+                    }
+                } else {
+                    statusDiv.innerHTML = `<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Network error: ${error.message}</div>`;
+                console.error('Update error:', error);
+            }
         }
 
         // Test function for debugging

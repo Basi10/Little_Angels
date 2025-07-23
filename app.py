@@ -284,32 +284,23 @@ def get_submissions():
 
 @app.route("/search-client", methods=["GET"])
 def search_client():
-    """Search for a client by phone number or name"""
+    """Search for a client by phone number only"""
     try:
         if collection is None:
             return jsonify({"error": "MongoDB not available"}), 503
 
-        # Get search parameters from query string
+        # Get phone parameter from query string
         phone = request.args.get("phone", "").strip()
-        name = request.args.get("name", "").strip()
 
-        if not phone and not name:
-            return (
-                jsonify(
-                    {"error": "Please provide either phone number or name to search"}
-                ),
-                400,
-            )
+        if not phone:
+            return jsonify({"error": "Please provide a phone number to search"}), 400
 
-        # Build search query
-        search_query = {}
+        # Validate phone number format (should be 9 digits)
+        if not phone.isdigit() or len(phone) != 9:
+            return jsonify({"error": "Phone number must be exactly 9 digits"}), 400
 
-        if phone:
-            # Search by phone number (main_phone or alt_phone)
-            search_query = {"$or": [{"main_phone": phone}, {"alt_phone": phone}]}
-        elif name:
-            # Search by name (case-insensitive)
-            search_query = {"user_name": {"$regex": name, "$options": "i"}}
+        # Search by phone number (main_phone or alt_phone)
+        search_query = {"$or": [{"main_phone": phone}, {"alt_phone": phone}]}
 
         # Find clients matching the search criteria
         clients = list(
@@ -319,7 +310,7 @@ def search_client():
         if not clients:
             return jsonify(
                 {
-                    "message": "No clients found matching your search criteria",
+                    "message": f"No client found with phone number +251{phone}",
                     "clients": [],
                     "count": 0,
                 }
@@ -327,7 +318,7 @@ def search_client():
 
         return jsonify(
             {
-                "message": f"Found {len(clients)} client(s)",
+                "message": f"Found {len(clients)} client(s) with phone number +251{phone}",
                 "clients": clients,
                 "count": len(clients),
             }
@@ -509,6 +500,162 @@ def get_waiting_list():
     except Exception as e:
         app.logger.error(f"Error retrieving waiting list: {str(e)}")
         return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+
+@app.route("/update-client", methods=["PUT"])
+def update_client():
+    """Update an existing client's information"""
+    try:
+        if collection is None:
+            return jsonify({"error": "MongoDB not available"}), 503
+
+        # Get JSON data from the request
+        update_data = request.get_json()
+
+        if not update_data:
+            app.logger.error("No data received for client update")
+            return jsonify({"error": "No data received"}), 400
+
+        # Get the original phone number to identify the client
+        original_phone = update_data.get("original_phone")
+        if not original_phone:
+            return (
+                jsonify({"error": "Original phone number is required for update"}),
+                400,
+            )
+
+        # Find the existing client
+        existing_client = collection.find_one(
+            {"$or": [{"main_phone": original_phone}, {"alt_phone": original_phone}]}
+        )
+
+        if not existing_client:
+            return (
+                jsonify(
+                    {"error": f"No client found with phone number +251{original_phone}"}
+                ),
+                400,
+            )
+
+        # Get the new phone numbers
+        new_main_phone = update_data.get("main_phone")
+        new_alt_phone = update_data.get("alt_phone")
+
+        if not new_main_phone:
+            return jsonify({"error": "Main phone number is required"}), 400
+
+        # Validate phone number format
+        if not new_main_phone.isdigit() or len(new_main_phone) != 9:
+            return jsonify({"error": "Main phone number must be exactly 9 digits"}), 400
+
+        if new_alt_phone and (not new_alt_phone.isdigit() or len(new_alt_phone) != 9):
+            return (
+                jsonify({"error": "Alternate phone number must be exactly 9 digits"}),
+                400,
+            )
+
+        # Check for duplicates (excluding the current client)
+        current_submission_id = existing_client.get("submission_id")
+
+        # Check if new main phone is already used by another client
+        duplicate_main = collection.find_one(
+            {
+                "$and": [
+                    {"submission_id": {"$ne": current_submission_id}},
+                    {
+                        "$or": [
+                            {"main_phone": new_main_phone},
+                            {"alt_phone": new_main_phone},
+                        ]
+                    },
+                ]
+            }
+        )
+
+        if duplicate_main:
+            return (
+                jsonify(
+                    {
+                        "error": f"Phone number +251{new_main_phone} is already registered to another client"
+                    }
+                ),
+                400,
+            )
+
+        # Check if new alt phone is already used by another client (if provided)
+        if new_alt_phone:
+            duplicate_alt = collection.find_one(
+                {
+                    "$and": [
+                        {"submission_id": {"$ne": current_submission_id}},
+                        {
+                            "$or": [
+                                {"main_phone": new_alt_phone},
+                                {"alt_phone": new_alt_phone},
+                            ]
+                        },
+                    ]
+                }
+            )
+
+            if duplicate_alt:
+                return (
+                    jsonify(
+                        {
+                            "error": f"Alternate phone number +251{new_alt_phone} is already registered to another client"
+                        }
+                    ),
+                    400,
+                )
+
+        # Prepare update data (remove original_phone as it's not part of the client data)
+        client_update = {
+            key: value for key, value in update_data.items() if key != "original_phone"
+        }
+
+        # Add update timestamp
+        client_update["last_updated"] = datetime.utcnow()
+        client_update["updated_by"] = (
+            "admin"  # You could make this dynamic based on user authentication
+        )
+
+        # Update the client
+        result = collection.update_one(
+            {"submission_id": current_submission_id}, {"$set": client_update}
+        )
+
+        if result.matched_count == 0:
+            return jsonify({"error": "Client not found for update"}), 404
+
+        if result.modified_count == 0:
+            return jsonify({"message": "No changes were made to the client data"}), 200
+
+        # Log the update
+        app.logger.info("=" * 50)
+        app.logger.info(
+            f"CLIENT UPDATE - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+        app.logger.info(f"Submission ID: {current_submission_id}")
+        app.logger.info(f"Original Phone: +251{original_phone}")
+        app.logger.info(f"New Main Phone: +251{new_main_phone}")
+        app.logger.info(f"Updated Fields: {list(client_update.keys())}")
+        app.logger.info("=" * 50)
+
+        return (
+            jsonify(
+                {
+                    "message": "Client information updated successfully",
+                    "updated_fields": list(client_update.keys()),
+                    "matched_count": result.matched_count,
+                    "modified_count": result.modified_count,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error updating client: {str(e)}")
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 
 @app.route("/test-connection", methods=["GET"])
