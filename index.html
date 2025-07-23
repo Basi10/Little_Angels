@@ -322,6 +322,7 @@
         <a href="#" onclick="showPage('signup')" class="active">New Registration</a>
         <a href="#" onclick="showPage('client-info')">Client Information</a>
         <a href="#" onclick="showPage('waiting-list')">Add to Waiting List</a>
+        <a href="#" onclick="showPage('view-waiting-list')">View Waiting List</a>
         <a href="#" onclick="showPage('view-clients')">View All Clients</a>
     </div>
 
@@ -508,6 +509,39 @@
             </form>
         </div>
 
+        <!-- View Waiting List Page -->
+        <div id="view-waiting-list" class="page">
+            <div class="page-header">
+                <h1>Waiting List</h1>
+                <p>View and manage clients on the waiting list</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <button type="button" onclick="updateWaitingListTable()"
+                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">
+                    Refresh Waiting List
+                </button>
+            </div>
+
+            <table id="waiting-list-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone Number</th>
+                        <th>Alt Phone</th>
+                        <th>Notes</th>
+                        <th>Date Added</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="waiting-list-table-body">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #666;">No clients on waiting list yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <!-- View All Clients Page -->
         <div id="view-clients" class="page">
             <div class="page-header">
@@ -572,6 +606,8 @@
             // Load data when switching to specific pages
             if (pageId === 'view-clients') {
                 updateClientsTable();
+            } else if (pageId === 'view-waiting-list') {
+                updateWaitingListTable();
             }
         }
 
@@ -774,22 +810,68 @@
         }
 
         // Waiting list functionality
-        function addToWaitingList(event) {
+        async function addToWaitingList(event) {
             event.preventDefault();
 
-            const name = document.getElementById('waiting-name').value;
-            const phone = document.getElementById('waiting-phone').value;
+            const name = document.getElementById('waiting-name').value.trim();
+            const phone = document.getElementById('waiting-phone').value.trim();
+            const altPhone = document.getElementById('waiting-alt-phone').value.trim();
+            const notes = document.getElementById('notes').value.trim();
 
             if (!name || !phone) {
                 alert('Please fill in all required fields.');
                 return false;
             }
 
-            // This would typically make an API call to add to waiting list
-            const statusDiv = document.getElementById('waiting-status-message');
-            statusDiv.innerHTML = '<div style="color: #2e7d32; background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 20px;">Successfully added to waiting list!</div>';
+            // Validate phone numbers
+            if (!/^\d{9}$/.test(phone)) {
+                alert('Main phone number must be exactly 9 digits.');
+                return false;
+            }
 
-            document.getElementById('waitingListForm').reset();
+            if (altPhone && !/^\d{9}$/.test(altPhone)) {
+                alert('Alternate phone number must be exactly 9 digits.');
+                return false;
+            }
+
+            const statusDiv = document.getElementById('waiting-status-message');
+            statusDiv.innerHTML = '<div style="color: #666; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px;">Adding to waiting list...</div>';
+
+            try {
+                const waitingData = {
+                    name: name,
+                    phone: phone,
+                    alt_phone: altPhone || null,
+                    notes: notes || null
+                };
+
+                const response = await fetch(`${BACKEND_URL}/add-waiting-list`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(waitingData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = '<div style="color: #2e7d32; background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #2e7d32;">Successfully added to waiting list!</div>';
+                    document.getElementById('waitingListForm').reset();
+
+                    // Update waiting list table if user is viewing it
+                    const waitingListPage = document.getElementById('view-waiting-list');
+                    if (waitingListPage && waitingListPage.classList.contains('active')) {
+                        updateWaitingListTable();
+                    }
+                } else {
+                    statusDiv.innerHTML = `<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #c62828;">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #c62828;">Network error: ${error.message}</div>`;
+                console.error('Waiting list error:', error);
+            }
+
             return false;
         }
 
@@ -870,6 +952,58 @@
             console.log('BACKEND_URL:', BACKEND_URL);
             console.log('Table body element exists:', !!document.getElementById('clients-table-body'));
         });
+
+        // Update waiting list table
+        async function updateWaitingListTable() {
+            const tableBody = document.getElementById('waiting-list-table-body');
+
+            // Show loading state
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; padding: 20px;">Loading waiting list...</td></tr>';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/waiting-list`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayWaitingListTable(result);
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #c62828; padding: 20px;">Error loading waiting list: ${result.error}</td></tr>`;
+                }
+            } catch (error) {
+                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #c62828; padding: 20px;">Network error: ${error.message}</td></tr>`;
+                console.error('Error loading waiting list:', error);
+            }
+        }
+
+        function displayWaitingListTable(result) {
+            const tableBody = document.getElementById('waiting-list-table-body');
+
+            if (result.count === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; padding: 20px;">No clients on waiting list yet</td></tr>';
+                return;
+            }
+
+            let html = '';
+            result.waiting_clients.forEach(client => {
+                const altPhone = client.alt_phone ? `+251${client.alt_phone}` : 'N/A';
+                const submissionDate = client.submitted_at?.split('T')[0] || 'N/A';
+                const notes = client.notes || 'No notes';
+                const status = client.status || 'waiting';
+
+                html += `
+                    <tr>
+                        <td>${client.name || 'N/A'}</td>
+                        <td>+251${client.phone || 'N/A'}</td>
+                        <td>${altPhone}</td>
+                        <td>${notes}</td>
+                        <td>${submissionDate}</td>
+                        <td><span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 12px; text-transform: uppercase;">${status}</span></td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML = html;
+        }
 
         // Test function for debugging
         function testBackendConnection() {

@@ -361,6 +361,156 @@ def get_all_clients():
         return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 
+@app.route("/add-waiting-list", methods=["POST"])
+def add_to_waiting_list():
+    """Add a client to the waiting list"""
+    try:
+        if collection is None:
+            return jsonify({"error": "MongoDB not available"}), 503
+
+        # Get JSON data from the request
+        waiting_data = request.get_json()
+
+        if not waiting_data:
+            app.logger.error("No data received for waiting list submission")
+            return jsonify({"error": "No data received"}), 400
+
+        # Validate required fields
+        required_fields = ["name", "phone"]
+        for field in required_fields:
+            if not waiting_data.get(field):
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        # Check for duplicate phone numbers in both collections
+        phone = waiting_data.get("phone")
+        alt_phone = waiting_data.get("alt_phone")
+
+        # Check in main clients collection
+        existing_client = collection.find_one(
+            {"$or": [{"main_phone": phone}, {"alt_phone": phone}]}
+        )
+
+        if existing_client:
+            return (
+                jsonify(
+                    {
+                        "error": f"Phone number +251{phone} is already registered as a client"
+                    }
+                ),
+                400,
+            )
+
+        # Check in waiting list collection
+        waiting_collection = db["waiting_list"]
+        existing_waiting = waiting_collection.find_one(
+            {"$or": [{"phone": phone}, {"alt_phone": phone}]}
+        )
+
+        if existing_waiting:
+            return (
+                jsonify(
+                    {
+                        "error": f"Phone number +251{phone} is already on the waiting list"
+                    }
+                ),
+                400,
+            )
+
+        # Check alternate phone if provided
+        if alt_phone:
+            existing_alt_client = collection.find_one(
+                {"$or": [{"main_phone": alt_phone}, {"alt_phone": alt_phone}]}
+            )
+
+            if existing_alt_client:
+                return (
+                    jsonify(
+                        {
+                            "error": f"Alternate phone number +251{alt_phone} is already registered as a client"
+                        }
+                    ),
+                    400,
+                )
+
+            existing_alt_waiting = waiting_collection.find_one(
+                {"$or": [{"phone": alt_phone}, {"alt_phone": alt_phone}]}
+            )
+
+            if existing_alt_waiting:
+                return (
+                    jsonify(
+                        {
+                            "error": f"Alternate phone number +251{alt_phone} is already on the waiting list"
+                        }
+                    ),
+                    400,
+                )
+
+        # Add timestamp and ID
+        document = {
+            **waiting_data,
+            "submitted_at": datetime.utcnow(),
+            "submission_id": str(datetime.utcnow().timestamp()).replace(".", ""),
+            "status": "waiting",
+        }
+
+        # Insert into waiting list collection
+        result = waiting_collection.insert_one(document)
+        app.logger.info(f"Waiting list entry saved with ID: {result.inserted_id}")
+
+        # Log the waiting list entry
+        app.logger.info("=" * 50)
+        app.logger.info(
+            f"NEW WAITING LIST ENTRY - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+        app.logger.info(f"Name: {waiting_data.get('name')}")
+        app.logger.info(f"Phone: +251{waiting_data.get('phone')}")
+        app.logger.info(f"Alt Phone: +251{waiting_data.get('alt_phone', 'N/A')}")
+        app.logger.info(f"Notes: {waiting_data.get('notes', 'None')}")
+        app.logger.info("=" * 50)
+
+        return (
+            jsonify(
+                {
+                    "message": "Successfully added to waiting list",
+                    "submission_id": document["submission_id"],
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error adding to waiting list: {str(e)}")
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+
+@app.route("/waiting-list", methods=["GET"])
+def get_waiting_list():
+    """Get all clients on the waiting list"""
+    try:
+        if db is None:
+            return jsonify({"error": "MongoDB not available"}), 503
+
+        waiting_collection = db["waiting_list"]
+
+        # Get all waiting list entries, sorted by submission date (newest first)
+        waiting_clients = list(
+            waiting_collection.find({}, {"_id": 0}).sort("submitted_at", -1)
+        )
+
+        return jsonify(
+            {
+                "message": f"Retrieved {len(waiting_clients)} waiting list entr{'y' if len(waiting_clients) == 1 else 'ies'}",
+                "waiting_clients": waiting_clients,
+                "count": len(waiting_clients),
+            }
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error retrieving waiting list: {str(e)}")
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+
 @app.route("/test-connection", methods=["GET"])
 def test_connection():
     """Test MongoDB connection and provide diagnostic information"""
