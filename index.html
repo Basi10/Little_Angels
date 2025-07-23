@@ -4,133 +4,567 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up Form</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Little Angels - Client Management</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 30px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            margin: 5px 0;
+        }
+
+        .sidebar a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left-color: #fff;
+            padding-left: 25px;
+        }
+
+        .sidebar a.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-left-color: #fff;
+            font-weight: 600;
+        }
+
+        .content {
+            margin-left: 250px;
+            flex-grow: 1;
+            padding: 30px;
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            color: #333;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .page-header p {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Form Styling */
+        form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        fieldset {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #fafafa;
+        }
+
+        legend {
+            font-weight: 600;
+            color: #495057;
+            padding: 0 15px;
+            font-size: 1.1rem;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 5px 0;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .phone-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .phone-prefix {
+            background-color: #e9ecef;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-right: none;
+            border-radius: 6px 0 0 6px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .phone-container input {
+            border-radius: 0 6px 6px 0;
+            border-left: none;
+        }
+
+        /* Radio buttons */
+        input[type="radio"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        label:has(input[type="radio"]) {
+            display: inline-block;
+            margin-right: 20px;
+            cursor: pointer;
+        }
+
+        /* Checkboxes */
+        .circle-checkbox {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        .circle-checkbox input[type="checkbox"] {
+            display: none;
+        }
+
+        .custom-circle {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .circle-checkbox input[type="checkbox"]:checked+.custom-circle {
+            background-color: #667eea;
+        }
+
+        .circle-checkbox input[type="checkbox"]:checked+.custom-circle::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* Status message */
+        #status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 500;
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Client info page */
+        .client-search {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .content {
+                margin-left: 0;
+            }
+        }
+    </style>
 </head>
 
 <body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Little Angels</h2>
+        </div>
+        <a href="#" onclick="showPage('signup')" class="active">New Registration</a>
+        <a href="#" onclick="showPage('client-info')">Client Information</a>
+        <a href="#" onclick="showPage('waiting-list')">Add to Waiting List</a>
+        <a href="#" onclick="showPage('view-clients')">View All Clients</a>
+    </div>
 
-    <form id="signupForm" onsubmit="return submitForm(event)">
-
-        <h1>Sign Up</h1>
-
-        <fieldset>
-            <legend>Personal Information</legend>
-
-            <!-- Name -->
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="user_name" required>
-
-            <!-- Gender -->
-            <p>Gender:</p>
-            <label><input type="radio" name="gender" value="male"> Male</label>
-            <label><input type="radio" name="gender" value="female"> Female</label>
-
-            <!-- Age -->
-            <p>Enter your age:</p>
-            <label for="age-months">Months:</label>
-            <input type="number" id="age-months" name="age_months" min="0" max="11" required>
-
-            <label for="age-years">Years:</label>
-            <input type="number" id="age-years" name="age_years" min="0" max="120" required>
-
-            <!-- Phone Number -->
-            <label for="main-phone" class="required">Main Phone Number</label>
-            <div class="phone-container">
-                <span class="phone-prefix">+251</span>
-                <input type="tel" id="main-phone" name="main_phone" maxlength="9" pattern="\d{9}" required
-                    title="Enter exactly 9 digits">
+    <div class="content">
+        <!-- Sign Up Page -->
+        <div id="signup" class="page active">
+            <div class="page-header">
+                <h1>New Client Registration</h1>
+                <p>Register a new client for photography services</p>
             </div>
 
-            <label for="alt-phone">Alternate Phone Number (optional)</label>
-            <div class="phone-container">
-                <span class="phone-prefix">+251</span>
-                <input type="tel" id="alt-phone" name="alt_phone" maxlength="9" pattern="\d{9}">
+            <form id="signupForm" onsubmit="return submitForm(event)">
+                <fieldset>
+                    <legend>Personal Information</legend>
+
+                    <!-- Name -->
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="user_name" required>
+
+                    <!-- Gender -->
+                    <p style="margin: 15px 0 10px 0; font-weight: 500; color: #495057;">Gender:</p>
+                    <label><input type="radio" name="gender" value="male"> Male</label>
+                    <label><input type="radio" name="gender" value="female"> Female</label>
+
+                    <!-- Age -->
+                    <p style="margin: 15px 0 10px 0; font-weight: 500; color: #495057;">Enter your age:</p>
+                    <div style="display: flex; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label for="age-months">Months:</label>
+                            <input type="number" id="age-months" name="age_months" min="0" max="11" required>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="age-years">Years:</label>
+                            <input type="number" id="age-years" name="age_years" min="0" max="120" required>
+                        </div>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <label for="main-phone" class="required">Main Phone Number</label>
+                    <div class="phone-container">
+                        <span class="phone-prefix">+251</span>
+                        <input type="tel" id="main-phone" name="main_phone" maxlength="9" pattern="\d{9}" required
+                            title="Enter exactly 9 digits">
+                    </div>
+
+                    <label for="alt-phone">Alternate Phone Number (optional)</label>
+                    <div class="phone-container">
+                        <span class="phone-prefix">+251</span>
+                        <input type="tel" id="alt-phone" name="alt_phone" maxlength="9" pattern="\d{9}">
+                    </div>
+                </fieldset>
+
+                <!-- Package Selection -->
+                <fieldset>
+                    <legend>Package Selection</legend>
+
+                    <label for="package">Choose a package:</label>
+                    <select id="package" name="package" required>
+                        <option value="">-- Select a package --</option>
+                        <option value="diamond">Diamond Package - 39,000 ETB</option>
+                        <option value="gold">Gold Package - 29,000 ETB</option>
+                        <option value="event_no_video">Event Package (No Video) - 59,000 ETB</option>
+                        <option value="event_with_video">Event Package (With Video) - 79,000 ETB</option>
+                        <option value="platinum">Platinum Package - 59,000 ETB</option>
+                        <option value="softcopy">Softcopy - 19,000 ETB</option>
+                    </select>
+
+                    <!-- Options -->
+                    <label for="choice">Choose an option:</label>
+                    <select id="choice" name="user_choice">
+                        <option value="option1">Mesk</option>
+                        <option value="option2">Ye bet wist program</option>
+                        <option value="option3">Studio</option>
+                    </select>
+                </fieldset>
+
+                <!-- Interests -->
+                <fieldset>
+                    <legend>Additional Services</legend>
+
+                    <label class="circle-checkbox">
+                        <input type="checkbox" name="interests" value="video">
+                        <span class="custom-circle"></span> Video
+                    </label>
+
+                    <label class="circle-checkbox">
+                        <input type="checkbox" name="interests" value="thank_you_card">
+                        <span class="custom-circle"></span> Thank you card
+                    </label>
+
+                    <label class="circle-checkbox">
+                        <input type="checkbox" name="interests" value="sign_board">
+                        <span class="custom-circle"></span> Sign board
+                    </label>
+
+                    <label class="circle-checkbox">
+                        <input type="checkbox" name="interests" value="cake">
+                        <span class="custom-circle"></span> Cake
+                    </label>
+
+                    <label class="circle-checkbox">
+                        <input type="checkbox" name="interests" value="softcopy">
+                        <span class="custom-circle"></span> Softcopy
+                    </label>
+                </fieldset>
+
+                <!-- Payment -->
+                <fieldset>
+                    <legend>Payment Information</legend>
+
+                    <label for="total">Total Payment:</label>
+                    <input type="number" id="total" name="total" readonly>
+
+                    <label for="initial">Initial Payment:</label>
+                    <input type="number" id="initial" name="initial" min="0">
+
+                    <label for="remaining">Remaining Amount:</label>
+                    <input type="number" id="remaining" name="remaining" readonly>
+                </fieldset>
+
+                <button type="submit">Register Client</button>
+
+                <!-- Status message area -->
+                <div id="status-message"></div>
+            </form>
+        </div>
+
+        <!-- Client Information Page -->
+        <div id="client-info" class="page">
+            <div class="page-header">
+                <h1>Client Information</h1>
+                <p>Search and view client details</p>
             </div>
 
-        </fieldset>
+            <div class="client-search">
+                <label for="search-name">Search by Name:</label>
+                <input type="text" id="search-name" class="search-input" placeholder="Enter client name...">
 
-        <!-- Package Selection -->
-        <fieldset>
-            <legend>Package</legend>
+                <label for="search-phone">Search by Phone:</label>
+                <div class="phone-container">
+                    <span class="phone-prefix">+251</span>
+                    <input type="tel" id="search-phone" maxlength="9" pattern="\d{9}" placeholder="912345678">
+                </div>
 
-            <label for="package">Choose a package:</label>
-            <select id="package" name="package" required>
-                <option value="">-- Select a package --</option>
-                <option value="diamond">Diamond Package</option>
-                <option value="gold">Gold Package</option>
-                <option value="event_no_video">Event Package (No Video)</option>
-                <option value="event_with_video">Event Package (With Video)</option>
-                <option value="platinum">Platinum Package</option>
-                <option value="softcopy">Softcopy</option>
-            </select>
+                <button type="button" onclick="searchClient()">Search Client</button>
+            </div>
 
-            <!-- Options -->
-            <label for="choice">Choose an option:</label>
-            <select id="choice" name="user_choice">
-                <option value="option1">Mesk</option>
-                <option value="option2">Ye bet wist program</option>
-                <option value="option3">Studio</option>
-            </select>
-        </fieldset>
+            <div id="client-results" style="margin-top: 20px;"></div>
+        </div>
 
-        <!-- Interests -->
-        <fieldset>
-            <legend>Interests</legend>
+        <!-- Waiting List Page -->
+        <div id="waiting-list" class="page">
+            <div class="page-header">
+                <h1>Add to Waiting List</h1>
+                <p>Add potential clients to the waiting list</p>
+            </div>
 
-            <label class="circle-checkbox">
-                <input type="checkbox" name="interests" value="video">
-                <span class="custom-circle"></span> Video
-            </label>
+            <form id="waitingListForm" onsubmit="return addToWaitingList(event)">
+                <fieldset>
+                    <legend>Basic Information</legend>
 
-            <label class="circle-checkbox">
-                <input type="checkbox" name="interests" value="thank_you_card">
-                <span class="custom-circle"></span> Thank you card
-            </label>
+                    <label for="waiting-name">Full Name:</label>
+                    <input type="text" id="waiting-name" name="name" required>
 
-            <label class="circle-checkbox">
-                <input type="checkbox" name="interests" value="sign_board">
-                <span class="custom-circle"></span> Sign board
-            </label>
+                    <label for="waiting-phone">Phone Number:</label>
+                    <div class="phone-container">
+                        <span class="phone-prefix">+251</span>
+                        <input type="tel" id="waiting-phone" name="phone" maxlength="9" pattern="\d{9}" required>
+                    </div>
 
-            <label class="circle-checkbox">
-                <input type="checkbox" name="interests" value="cake">
-                <span class="custom-circle"></span> Cake
-            </label>
+                    <label for="waiting-alt-phone">Alternate Phone Number (optional):</label>
+                    <div class="phone-container">
+                        <span class="phone-prefix">+251</span>
+                        <input type="tel" id="waiting-alt-phone" name="alt_phone" maxlength="9" pattern="\d{9}">
+                    </div>
 
-            <label class="circle-checkbox">
-                <input type="checkbox" name="interests" value="softcopy">
-                <span class="custom-circle"></span> Softcopy
-            </label>
-        </fieldset>
+                    <label for="notes">Notes:</label>
+                    <textarea id="notes" name="notes" rows="3"
+                        style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; resize: vertical;"></textarea>
+                </fieldset>
 
-        <!-- Payment -->
-        <fieldset>
-            <legend>Payment</legend>
+                <button type="submit">Add to Waiting List</button>
+                <div id="waiting-status-message"></div>
+            </form>
+        </div>
 
-            <label for="total">Total Payment:</label>
-            <input type="number" id="total" name="total" readonly>
+        <!-- View All Clients Page -->
+        <div id="view-clients" class="page">
+            <div class="page-header">
+                <h1>All Registered Clients</h1>
+                <p>View and manage all registered clients</p>
+            </div>
 
-            <label for="initial">Initial Payment:</label>
-            <input type="number" id="initial" name="initial" min="0">
-
-            <label for="remaining">Remaining Amount:</label>
-            <input type="number" id="remaining" name="remaining" readonly>
-        </fieldset>
-
-        <button type="submit">Submit</button>
-
-        <!-- Status message area -->
-        <div id="status-message" style="margin-top: 20px; padding: 10px; border-radius: 5px; display: none;"></div>
-    </form>
+            <table id="clients-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone Number</th>
+                        <th>Package</th>
+                        <th>Total Payment</th>
+                        <th>Initial Payment</th>
+                        <th>Remaining</th>
+                        <th>Date Registered</th>
+                    </tr>
+                </thead>
+                <tbody id="clients-table-body">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #666;">No clients registered yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <script>
+        // Navigation
+        function showPage(pageId) {
+            // Remove active class from all pages and nav links
+            const pages = document.querySelectorAll('.page');
+            const navLinks = document.querySelectorAll('.sidebar a');
+
+            pages.forEach(page => page.classList.remove('active'));
+            navLinks.forEach(link => link.classList.remove('active'));
+
+            // Show selected page and highlight nav
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+
+            // Find and activate the corresponding nav link
+            const clickedLink = event ? event.target : document.querySelector(`a[onclick="showPage('${pageId}')"]`);
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
+        }
+
+        // Form functionality
         const packageSelect = document.getElementById('package');
         const totalInput = document.getElementById('total');
         const initialInput = document.getElementById('initial');
         const remainingInput = document.getElementById('remaining');
 
-        // IMPORTANT: Replace this URL with your actual Render backend URL after deployment
         const BACKEND_URL = 'https://little-angels-xqf1.onrender.com';
 
         const packagePrices = {
@@ -180,19 +614,15 @@
         async function submitForm(event) {
             event.preventDefault();
 
-            // Validate phones first
             if (!validatePhones()) {
                 return false;
             }
 
-            // Collect all form data
             const formData = new FormData(document.getElementById('signupForm'));
             const formObject = {};
 
-            // Convert FormData to object
             for (let [key, value] of formData.entries()) {
                 if (key === 'interests') {
-                    // Handle multiple checkboxes
                     if (!formObject[key]) {
                         formObject[key] = [];
                     }
@@ -202,9 +632,9 @@
                 }
             }
 
-            // Add calculated fields
             formObject.total = totalInput.value;
             formObject.remaining = remainingInput.value;
+            formObject.date_registered = new Date().toISOString().split('T')[0];
 
             try {
                 showStatus('Submitting form...', false);
@@ -220,11 +650,11 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    showStatus('Form submitted successfully! Response: ' + result.response, false);
-                    // Optionally reset the form
-                    // document.getElementById('signupForm').reset();
+                    showStatus('Client registered successfully!', false);
+                    document.getElementById('signupForm').reset();
+                    updateClientsTable();
                 } else {
-                    showStatus('Error submitting form: ' + result.error, true);
+                    showStatus('Error registering client: ' + result.error, true);
                 }
             } catch (error) {
                 showStatus('Network error: ' + error.message, true);
@@ -234,10 +664,55 @@
             return false;
         }
 
-        packageSelect.addEventListener('change', updateTotal);
-        initialInput.addEventListener('input', calculateRemaining);
-    </script>
+        // Client search functionality
+        function searchClient() {
+            const name = document.getElementById('search-name').value;
+            const phone = document.getElementById('search-phone').value;
 
+            if (!name && !phone) {
+                alert('Please enter either a name or phone number to search.');
+                return;
+            }
+
+            // This would typically make an API call to search for clients
+            const resultsDiv = document.getElementById('client-results');
+            resultsDiv.innerHTML = '<p>Search functionality would be implemented here with backend integration.</p>';
+        }
+
+        // Waiting list functionality
+        function addToWaitingList(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('waiting-name').value;
+            const phone = document.getElementById('waiting-phone').value;
+
+            if (!name || !phone) {
+                alert('Please fill in all required fields.');
+                return false;
+            }
+
+            // This would typically make an API call to add to waiting list
+            const statusDiv = document.getElementById('waiting-status-message');
+            statusDiv.innerHTML = '<div style="color: #2e7d32; background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 20px;">Successfully added to waiting list!</div>';
+
+            document.getElementById('waitingListForm').reset();
+            return false;
+        }
+
+        // Update clients table (placeholder)
+        function updateClientsTable() {
+            // This would typically fetch data from the backend
+            // For now, just showing placeholder functionality
+        }
+
+        // Event listeners
+        if (packageSelect) {
+            packageSelect.addEventListener('change', updateTotal);
+        }
+        if (initialInput) {
+            initialInput.addEventListener('input', calculateRemaining);
+        }
+    </script>
 </body>
 
 </html>
