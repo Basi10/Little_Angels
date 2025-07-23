@@ -1275,9 +1275,18 @@
             try {
                 const totalAmount = document.getElementById('edit_total').value;
 
-                // Update payment fields to reflect full payment
+                // Include all current client data to satisfy backend validation
                 const updateData = {
                     original_phone: document.getElementById('originalPhone').value,
+                    user_name: document.getElementById('edit_name').value,
+                    gender: document.querySelector('input[name="edit_gender"]:checked')?.value,
+                    age_years: document.getElementById('edit_age_years').value,
+                    age_months: document.getElementById('edit_age_months').value,
+                    main_phone: document.getElementById('edit_main_phone').value,
+                    alt_phone: document.getElementById('edit_alt_phone').value || null,
+                    package: document.getElementById('edit_package').value,
+                    user_choice: document.getElementById('edit_choice').value,
+                    total: totalAmount,
                     initial: totalAmount, // Set initial payment to total amount
                     remaining: '0', // Zero out remaining balance
                     payment_status: 'paid_in_full' // Add payment status
