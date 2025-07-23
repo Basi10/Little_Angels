@@ -557,6 +557,11 @@
             if (clickedLink) {
                 clickedLink.classList.add('active');
             }
+
+            // Load data when switching to specific pages
+            if (pageId === 'view-clients') {
+                updateClientsTable();
+            }
         }
 
         // Form functionality
@@ -665,18 +670,96 @@
         }
 
         // Client search functionality
-        function searchClient() {
-            const name = document.getElementById('search-name').value;
-            const phone = document.getElementById('search-phone').value;
+        async function searchClient() {
+            const name = document.getElementById('search-name').value.trim();
+            const phone = document.getElementById('search-phone').value.trim();
 
             if (!name && !phone) {
                 alert('Please enter either a name or phone number to search.');
                 return;
             }
 
-            // This would typically make an API call to search for clients
             const resultsDiv = document.getElementById('client-results');
-            resultsDiv.innerHTML = '<p>Search functionality would be implemented here with backend integration.</p>';
+            resultsDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">Searching...</div>';
+
+            try {
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (name) params.append('name', name);
+                if (phone) params.append('phone', phone);
+
+                const response = await fetch(`${BACKEND_URL}/search-client?${params}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    displaySearchResults(result);
+                } else {
+                    resultsDiv.innerHTML = `<div style="background: #ffebee; color: #c62828; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div style="background: #ffebee; color: #c62828; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Network error: ${error.message}</div>`;
+                console.error('Search error:', error);
+            }
+        }
+
+        function displaySearchResults(result) {
+            const resultsDiv = document.getElementById('client-results');
+
+            if (result.count === 0) {
+                resultsDiv.innerHTML = `
+                    <div style="background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; border: 1px solid #856404; text-align: center;">
+                        ${result.message}
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div style="background: #e8f5e8; color: #2e7d32; padding: 15px; border-radius: 8px; border: 1px solid #2e7d32; margin-bottom: 20px;">
+                    ${result.message}
+                </div>
+                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Name</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Phone</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Alt Phone</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Package</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Total</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Initial</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Remaining</th>
+                            <th style="padding: 15px; text-align: left; font-weight: 600;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            result.clients.forEach(client => {
+                const packageName = client.package ? client.package.replace('_', ' ').toUpperCase() : 'N/A';
+                const altPhone = client.alt_phone ? `+251${client.alt_phone}` : 'N/A';
+                const registrationDate = client.date_registered || client.submitted_at?.split('T')[0] || 'N/A';
+                const interests = Array.isArray(client.interests) ? client.interests.join(', ') : 'None';
+
+                html += `
+                    <tr style="border-bottom: 1px solid #e9ecef;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='white'">
+                        <td style="padding: 15px;">${client.user_name || 'N/A'}</td>
+                        <td style="padding: 15px;">+251${client.main_phone || 'N/A'}</td>
+                        <td style="padding: 15px;">${altPhone}</td>
+                        <td style="padding: 15px;">${packageName}</td>
+                        <td style="padding: 15px;">${client.total || 'N/A'} ETB</td>
+                        <td style="padding: 15px;">${client.initial || 'N/A'} ETB</td>
+                        <td style="padding: 15px;">${client.remaining || 'N/A'} ETB</td>
+                        <td style="padding: 15px;">${registrationDate}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            resultsDiv.innerHTML = html;
         }
 
         // Waiting list functionality
@@ -699,10 +782,55 @@
             return false;
         }
 
-        // Update clients table (placeholder)
-        function updateClientsTable() {
-            // This would typically fetch data from the backend
-            // For now, just showing placeholder functionality
+        // Update clients table
+        async function updateClientsTable() {
+            const tableBody = document.getElementById('clients-table-body');
+
+            // Show loading state
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666; padding: 20px;">Loading clients...</td></tr>';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/all-clients`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayAllClientsTable(result);
+                } else {
+                    tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #c62828; padding: 20px;">Error loading clients: ${result.error}</td></tr>`;
+                }
+            } catch (error) {
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #c62828; padding: 20px;">Network error: ${error.message}</td></tr>`;
+                console.error('Error loading clients:', error);
+            }
+        }
+
+        function displayAllClientsTable(result) {
+            const tableBody = document.getElementById('clients-table-body');
+
+            if (result.count === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666; padding: 20px;">No clients registered yet</td></tr>';
+                return;
+            }
+
+            let html = '';
+            result.clients.forEach(client => {
+                const packageName = client.package ? client.package.replace('_', ' ').toUpperCase() : 'N/A';
+                const registrationDate = client.date_registered || client.submitted_at?.split('T')[0] || 'N/A';
+
+                html += `
+                    <tr>
+                        <td>${client.user_name || 'N/A'}</td>
+                        <td>+251${client.main_phone || 'N/A'}</td>
+                        <td>${packageName}</td>
+                        <td>${client.total || 'N/A'} ETB</td>
+                        <td>${client.initial || 'N/A'} ETB</td>
+                        <td>${client.remaining || 'N/A'} ETB</td>
+                        <td>${registrationDate}</td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML = html;
         }
 
         // Event listeners

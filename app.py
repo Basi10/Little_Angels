@@ -127,6 +127,48 @@ def handle_form_submission():
             app.logger.error("No data received in form submission")
             return jsonify({"error": "No data received"}), 400
 
+        # Check for duplicate phone numbers before saving
+        if collection is not None and form_data.get("main_phone"):
+            main_phone = form_data.get("main_phone")
+            alt_phone = form_data.get("alt_phone")
+
+            # Check if main phone already exists
+            existing_client = collection.find_one(
+                {"$or": [{"main_phone": main_phone}, {"alt_phone": main_phone}]}
+            )
+
+            if existing_client:
+                app.logger.warning(
+                    f"Duplicate main phone number attempted: {main_phone}"
+                )
+                return (
+                    jsonify(
+                        {
+                            "error": f"Phone number +251{main_phone} is already registered to another client"
+                        }
+                    ),
+                    400,
+                )
+
+            # Check if alternate phone already exists (if provided)
+            if alt_phone:
+                existing_alt_client = collection.find_one(
+                    {"$or": [{"main_phone": alt_phone}, {"alt_phone": alt_phone}]}
+                )
+
+                if existing_alt_client:
+                    app.logger.warning(
+                        f"Duplicate alternate phone number attempted: {alt_phone}"
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "error": f"Alternate phone number +251{alt_phone} is already registered to another client"
+                            }
+                        ),
+                        400,
+                    )
+
         # Log the timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -237,6 +279,85 @@ def get_submissions():
 
     except Exception as e:
         app.logger.error(f"Error retrieving submissions: {str(e)}")
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+
+@app.route("/search-client", methods=["GET"])
+def search_client():
+    """Search for a client by phone number or name"""
+    try:
+        if collection is None:
+            return jsonify({"error": "MongoDB not available"}), 503
+
+        # Get search parameters from query string
+        phone = request.args.get("phone", "").strip()
+        name = request.args.get("name", "").strip()
+
+        if not phone and not name:
+            return (
+                jsonify(
+                    {"error": "Please provide either phone number or name to search"}
+                ),
+                400,
+            )
+
+        # Build search query
+        search_query = {}
+
+        if phone:
+            # Search by phone number (main_phone or alt_phone)
+            search_query = {"$or": [{"main_phone": phone}, {"alt_phone": phone}]}
+        elif name:
+            # Search by name (case-insensitive)
+            search_query = {"user_name": {"$regex": name, "$options": "i"}}
+
+        # Find clients matching the search criteria
+        clients = list(
+            collection.find(search_query, {"_id": 0}).sort("submitted_at", -1)
+        )
+
+        if not clients:
+            return jsonify(
+                {
+                    "message": "No clients found matching your search criteria",
+                    "clients": [],
+                    "count": 0,
+                }
+            )
+
+        return jsonify(
+            {
+                "message": f"Found {len(clients)} client(s)",
+                "clients": clients,
+                "count": len(clients),
+            }
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error searching for client: {str(e)}")
+        return jsonify({"error": f"Search error: {str(e)}"}), 500
+
+
+@app.route("/all-clients", methods=["GET"])
+def get_all_clients():
+    """Get all registered clients"""
+    try:
+        if collection is None:
+            return jsonify({"error": "MongoDB not available"}), 503
+
+        # Get all clients, sorted by registration date (newest first)
+        clients = list(collection.find({}, {"_id": 0}).sort("submitted_at", -1))
+
+        return jsonify(
+            {
+                "message": f"Retrieved {len(clients)} client(s)",
+                "clients": clients,
+                "count": len(clients),
+            }
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error retrieving all clients: {str(e)}")
         return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 
