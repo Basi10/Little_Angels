@@ -490,11 +490,7 @@
                         <input type="tel" id="waiting-phone" name="phone" maxlength="9" pattern="\d{9}" required>
                     </div>
 
-                    <label for="waiting-alt-phone">Alternate Phone Number (optional):</label>
-                    <div class="phone-container">
-                        <span class="phone-prefix">+251</span>
-                        <input type="tel" id="waiting-alt-phone" name="alt_phone" maxlength="9" pattern="\d{9}">
-                    </div>
+
 
                     <label for="notes">Notes:</label>
                     <textarea id="notes" name="notes" rows="3"
@@ -532,7 +528,7 @@
                 </thead>
                 <tbody id="waiting-list-table-body">
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #666;">No clients on waiting list yet</td>
+                        <td colspan="5" style="text-align: center; color: #666;">No clients on waiting list yet</td>
                     </tr>
                 </tbody>
             </table>
@@ -873,7 +869,6 @@
 
             const name = document.getElementById('waiting-name').value.trim();
             const phone = document.getElementById('waiting-phone').value.trim();
-            const altPhone = document.getElementById('waiting-alt-phone').value.trim();
             const notes = document.getElementById('notes').value.trim();
 
             if (!name || !phone) {
@@ -883,12 +878,7 @@
 
             // Validate phone numbers
             if (!/^\d{9}$/.test(phone)) {
-                alert('Main phone number must be exactly 9 digits.');
-                return false;
-            }
-
-            if (altPhone && !/^\d{9}$/.test(altPhone)) {
-                alert('Alternate phone number must be exactly 9 digits.');
+                alert('Phone number must be exactly 9 digits.');
                 return false;
             }
 
@@ -899,7 +889,6 @@
                 const waitingData = {
                     name: name,
                     phone: phone,
-                    alt_phone: altPhone || null,
                     notes: notes || null
                 };
 
@@ -1029,7 +1018,7 @@
             const tableBody = document.getElementById('waiting-list-table-body');
 
             // Show loading state
-            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; padding: 20px;">Loading waiting list...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666; padding: 20px;">Loading waiting list...</td></tr>';
 
             try {
                 const response = await fetch(`${BACKEND_URL}/waiting-list`);
@@ -1038,10 +1027,10 @@
                 if (response.ok) {
                     displayWaitingListTable(result);
                 } else {
-                    tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #c62828; padding: 20px;">Error loading waiting list: ${result.error}</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #c62828; padding: 20px;">Error loading waiting list: ${result.error}</td></tr>`;
                 }
             } catch (error) {
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #c62828; padding: 20px;">Network error: ${error.message}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #c62828; padding: 20px;">Network error: ${error.message}</td></tr>`;
                 console.error('Error loading waiting list:', error);
             }
         }
@@ -1050,13 +1039,12 @@
             const tableBody = document.getElementById('waiting-list-table-body');
 
             if (result.count === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #666; padding: 20px;">No clients on waiting list yet</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666; padding: 20px;">No clients on waiting list yet</td></tr>';
                 return;
             }
 
             let html = '';
             result.waiting_clients.forEach(client => {
-                const altPhone = client.alt_phone ? `+251${client.alt_phone}` : 'N/A';
                 const submissionDate = client.submitted_at?.split('T')[0] || 'N/A';
                 const notes = client.notes || 'No notes';
                 const status = client.status || 'waiting';
@@ -1065,7 +1053,6 @@
                     <tr>
                         <td>${client.name || 'N/A'}</td>
                         <td>+251${client.phone || 'N/A'}</td>
-                        <td>${altPhone}</td>
                         <td>${notes}</td>
                         <td>${submissionDate}</td>
                         <td><span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 12px; text-transform: uppercase;">${status}</span></td>
