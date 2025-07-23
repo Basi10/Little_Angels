@@ -566,12 +566,13 @@
                         <th>Total Payment</th>
                         <th>Initial Payment</th>
                         <th>Remaining</th>
+                        <th>Payment Status</th>
                         <th>Date Registered</th>
                     </tr>
                 </thead>
                 <tbody id="clients-table-body">
                     <tr>
-                        <td colspan="7" style="text-align: center; color: #666;">No clients registered yet</td>
+                        <td colspan="8" style="text-align: center; color: #666;">No clients registered yet</td>
                     </tr>
                 </tbody>
             </table>
@@ -782,6 +783,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <h3 style="color: #333; margin: 0;">Client Information</h3>
                         <div>
+                            <button type="button" id="paidInFullBtn" onclick="markAsPaidInFull()" style="background: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer; ${(client.remaining && parseFloat(client.remaining) > 0 && client.payment_status !== 'paid_in_full') ? '' : 'display: none;'}">Mark as Paid in Full</button>
                             <button type="button" id="editBtn" onclick="enableEditing()" style="background: #ffc107; color: #000; padding: 8px 16px; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer;">Edit</button>
                             <button type="button" id="saveBtn" onclick="saveClientChanges()" style="background: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 4px; margin-right: 10px; cursor: pointer; display: none;">Save</button>
                             <button type="button" id="cancelBtn" onclick="cancelEditing()" style="background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; display: none;">Cancel</button>
@@ -850,6 +852,8 @@
                     
                     <fieldset style="border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #fafafa;">
                         <legend style="font-weight: 600; color: #495057; padding: 0 15px; font-size: 1.1rem;">Payment Information</legend>
+                        
+                        ${client.payment_status === 'paid_in_full' ? '<div id="payment-status-badge" style="background: #28a745; color: white; padding: 10px 15px; border-radius: 6px; text-align: center; font-weight: 600; margin-bottom: 15px;">✓ PAID IN FULL</div>' : '<div id="payment-status-badge" style="display: none;"></div>'}
                         
                         <label style="display: block; margin: 15px 0 5px 0; font-weight: 500; color: #495057;">Total Payment:</label>
                         <input type="number" id="edit_total" value="${client.total || ''}" disabled style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; background-color: #f8f9fa;">
@@ -939,7 +943,7 @@
             const tableBody = document.getElementById('clients-table-body');
 
             // Show loading state
-            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666; padding: 20px;">Loading clients...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666; padding: 20px;">Loading clients...</td></tr>';
 
             try {
                 console.log('Fetching clients from:', `${BACKEND_URL}/all-clients`);
@@ -953,11 +957,11 @@
                     displayAllClientsTable(result);
                 } else {
                     console.error('Backend error:', result);
-                    tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #c62828; padding: 20px;">Error loading clients: ${result.error}</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #c62828; padding: 20px;">Error loading clients: ${result.error}</td></tr>`;
                 }
             } catch (error) {
                 console.error('Network error details:', error);
-                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #c62828; padding: 20px;">Network error: ${error.message}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #c62828; padding: 20px;">Network error: ${error.message}</td></tr>`;
             }
         }
 
@@ -968,7 +972,7 @@
 
             if (result.count === 0) {
                 console.log('No clients found, showing empty message');
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666; padding: 20px;">No clients registered yet</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #666; padding: 20px;">No clients registered yet</td></tr>';
                 return;
             }
 
@@ -979,6 +983,18 @@
                 const packageName = client.package ? client.package.replace('_', ' ').toUpperCase() : 'N/A';
                 const registrationDate = client.date_registered || client.submitted_at?.split('T')[0] || 'N/A';
 
+                // Determine payment status
+                let paymentStatus = '';
+                if (client.payment_status === 'paid_in_full') {
+                    paymentStatus = '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">✓ PAID IN FULL</span>';
+                } else if (client.remaining && parseFloat(client.remaining) === 0) {
+                    paymentStatus = '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">✓ PAID IN FULL</span>';
+                } else if (client.remaining && parseFloat(client.remaining) > 0) {
+                    paymentStatus = '<span style="background: #ffc107; color: #000; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">PENDING</span>';
+                } else {
+                    paymentStatus = '<span style="background: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">UNKNOWN</span>';
+                }
+
                 html += `
                     <tr>
                         <td>${client.user_name || 'N/A'}</td>
@@ -987,6 +1003,7 @@
                         <td>${client.total || 'N/A'} ETB</td>
                         <td>${client.initial || 'N/A'} ETB</td>
                         <td>${client.remaining || 'N/A'} ETB</td>
+                        <td>${paymentStatus}</td>
                         <td>${registrationDate}</td>
                     </tr>
                 `;
@@ -1243,6 +1260,72 @@
             } catch (error) {
                 statusDiv.innerHTML = `<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Network error: ${error.message}</div>`;
                 console.error('Update error:', error);
+            }
+        }
+
+        async function markAsPaidInFull() {
+            // Confirm the action
+            if (!confirm('Are you sure you want to mark this client as paid in full? This will update the payment records to show zero remaining balance.')) {
+                return;
+            }
+
+            const statusDiv = document.getElementById('edit-status-message');
+            statusDiv.innerHTML = '<div style="color: #666; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">Marking as paid in full...</div>';
+
+            try {
+                const totalAmount = document.getElementById('edit_total').value;
+
+                // Update payment fields to reflect full payment
+                const updateData = {
+                    original_phone: document.getElementById('originalPhone').value,
+                    initial: totalAmount, // Set initial payment to total amount
+                    remaining: '0', // Zero out remaining balance
+                    payment_status: 'paid_in_full' // Add payment status
+                };
+
+                const response = await fetch(`${BACKEND_URL}/update-client`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Update the form display
+                    document.getElementById('edit_initial').value = totalAmount;
+                    document.getElementById('edit_remaining').value = '0';
+
+                    // Show the "Paid in Full" badge
+                    const paymentBadge = document.getElementById('payment-status-badge');
+                    paymentBadge.innerHTML = '✓ PAID IN FULL';
+                    paymentBadge.style.display = 'block';
+                    paymentBadge.style.background = '#28a745';
+                    paymentBadge.style.color = 'white';
+                    paymentBadge.style.padding = '10px 15px';
+                    paymentBadge.style.borderRadius = '6px';
+                    paymentBadge.style.textAlign = 'center';
+                    paymentBadge.style.fontWeight = '600';
+                    paymentBadge.style.marginBottom = '15px';
+
+                    // Hide the "Mark as Paid in Full" button
+                    document.getElementById('paidInFullBtn').style.display = 'none';
+
+                    statusDiv.innerHTML = '<div style="color: #2e7d32; background: #e8f5e8; padding: 15px; border-radius: 8px; border: 1px solid #2e7d32;">✓ Client successfully marked as paid in full!</div>';
+
+                    // Update the clients table if user is viewing it
+                    const clientsPage = document.getElementById('view-clients');
+                    if (clientsPage && clientsPage.classList.contains('active')) {
+                        updateClientsTable();
+                    }
+                } else {
+                    statusDiv.innerHTML = `<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div style="color: #c62828; background: #ffebee; padding: 15px; border-radius: 8px; border: 1px solid #c62828;">Network error: ${error.message}</div>`;
+                console.error('Paid in full error:', error);
             }
         }
 
