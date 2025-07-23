@@ -515,6 +515,17 @@
                 <p>View and manage all registered clients</p>
             </div>
 
+            <div style="margin-bottom: 20px;">
+                <button type="button" onclick="updateClientsTable()"
+                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">
+                    Refresh Client List
+                </button>
+                <button type="button" onclick="console.log('BACKEND_URL:', BACKEND_URL); testBackendConnection();"
+                    style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-left: 10px;">
+                    Test Backend Connection
+                </button>
+            </div>
+
             <table id="clients-table">
                 <thead>
                     <tr>
@@ -790,30 +801,40 @@
             tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666; padding: 20px;">Loading clients...</td></tr>';
 
             try {
+                console.log('Fetching clients from:', `${BACKEND_URL}/all-clients`);
                 const response = await fetch(`${BACKEND_URL}/all-clients`);
+                console.log('Response status:', response.status, response.statusText);
+
                 const result = await response.json();
+                console.log('Response data:', result);
 
                 if (response.ok) {
                     displayAllClientsTable(result);
                 } else {
+                    console.error('Backend error:', result);
                     tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #c62828; padding: 20px;">Error loading clients: ${result.error}</td></tr>`;
                 }
             } catch (error) {
+                console.error('Network error details:', error);
                 tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #c62828; padding: 20px;">Network error: ${error.message}</td></tr>`;
-                console.error('Error loading clients:', error);
             }
         }
 
         function displayAllClientsTable(result) {
+            console.log('displayAllClientsTable called with:', result);
             const tableBody = document.getElementById('clients-table-body');
+            console.log('Table body element:', tableBody);
 
             if (result.count === 0) {
+                console.log('No clients found, showing empty message');
                 tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #666; padding: 20px;">No clients registered yet</td></tr>';
                 return;
             }
 
+            console.log('Processing', result.count, 'clients');
             let html = '';
-            result.clients.forEach(client => {
+            result.clients.forEach((client, index) => {
+                console.log(`Processing client ${index + 1}:`, client);
                 const packageName = client.package ? client.package.replace('_', ' ').toUpperCase() : 'N/A';
                 const registrationDate = client.date_registered || client.submitted_at?.split('T')[0] || 'N/A';
 
@@ -830,7 +851,9 @@
                 `;
             });
 
+            console.log('Generated HTML:', html);
             tableBody.innerHTML = html;
+            console.log('Table updated successfully');
         }
 
         // Event listeners
@@ -839,6 +862,26 @@
         }
         if (initialInput) {
             initialInput.addEventListener('input', calculateRemaining);
+        }
+
+        // Add page load debugging
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM Content Loaded');
+            console.log('BACKEND_URL:', BACKEND_URL);
+            console.log('Table body element exists:', !!document.getElementById('clients-table-body'));
+        });
+
+        // Test function for debugging
+        function testBackendConnection() {
+            console.log('Testing backend connection...');
+            fetch(`${BACKEND_URL}/health`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Backend health check:', data);
+                })
+                .catch(error => {
+                    console.error('Backend connection failed:', error);
+                });
         }
     </script>
 </body>
