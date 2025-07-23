@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up Form</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <form id="signupForm" onsubmit="return submitForm(event)">
+
+        <h1>Sign Up</h1>
+
+        <fieldset>
+            <legend>Personal Information</legend>
+
+            <!-- Name -->
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="user_name" required>
+
+            <!-- Gender -->
+            <p>Gender:</p>
+            <label><input type="radio" name="gender" value="male"> Male</label>
+            <label><input type="radio" name="gender" value="female"> Female</label>
+
+            <!-- Age -->
+            <p>Enter your age:</p>
+            <label for="age-months">Months:</label>
+            <input type="number" id="age-months" name="age_months" min="0" max="11" required>
+
+            <label for="age-years">Years:</label>
+            <input type="number" id="age-years" name="age_years" min="0" max="120" required>
+
+            <!-- Phone Number -->
+            <label for="main-phone" class="required">Main Phone Number</label>
+            <div class="phone-container">
+                <span class="phone-prefix">+251</span>
+                <input type="tel" id="main-phone" name="main_phone" maxlength="9" pattern="\d{9}" required
+                    title="Enter exactly 9 digits">
+            </div>
+
+            <label for="alt-phone">Alternate Phone Number (optional)</label>
+            <div class="phone-container">
+                <span class="phone-prefix">+251</span>
+                <input type="tel" id="alt-phone" name="alt_phone" maxlength="9" pattern="\d{9}">
+            </div>
+
+        </fieldset>
+
+        <!-- Package Selection -->
+        <fieldset>
+            <legend>Package</legend>
+
+            <label for="package">Choose a package:</label>
+            <select id="package" name="package" required>
+                <option value="">-- Select a package --</option>
+                <option value="diamond">Diamond Package</option>
+                <option value="gold">Gold Package</option>
+                <option value="event_no_video">Event Package (No Video)</option>
+                <option value="event_with_video">Event Package (With Video)</option>
+                <option value="platinum">Platinum Package</option>
+                <option value="softcopy">Softcopy</option>
+            </select>
+
+            <!-- Options -->
+            <label for="choice">Choose an option:</label>
+            <select id="choice" name="user_choice">
+                <option value="option1">Mesk</option>
+                <option value="option2">Ye bet wist program</option>
+                <option value="option3">Studio</option>
+            </select>
+        </fieldset>
+
+        <!-- Interests -->
+        <fieldset>
+            <legend>Interests</legend>
+
+            <label class="circle-checkbox">
+                <input type="checkbox" name="interests" value="video">
+                <span class="custom-circle"></span> Video
+            </label>
+
+            <label class="circle-checkbox">
+                <input type="checkbox" name="interests" value="thank_you_card">
+                <span class="custom-circle"></span> Thank you card
+            </label>
+
+            <label class="circle-checkbox">
+                <input type="checkbox" name="interests" value="sign_board">
+                <span class="custom-circle"></span> Sign board
+            </label>
+
+            <label class="circle-checkbox">
+                <input type="checkbox" name="interests" value="cake">
+                <span class="custom-circle"></span> Cake
+            </label>
+
+            <label class="circle-checkbox">
+                <input type="checkbox" name="interests" value="softcopy">
+                <span class="custom-circle"></span> Softcopy
+            </label>
+        </fieldset>
+
+        <!-- Payment -->
+        <fieldset>
+            <legend>Payment</legend>
+
+            <label for="total">Total Payment:</label>
+            <input type="number" id="total" name="total" readonly>
+
+            <label for="initial">Initial Payment:</label>
+            <input type="number" id="initial" name="initial" min="0">
+
+            <label for="remaining">Remaining Amount:</label>
+            <input type="number" id="remaining" name="remaining" readonly>
+        </fieldset>
+
+        <button type="submit">Submit</button>
+
+        <!-- Status message area -->
+        <div id="status-message" style="margin-top: 20px; padding: 10px; border-radius: 5px; display: none;"></div>
+    </form>
+
+    <script>
+        const packageSelect = document.getElementById('package');
+        const totalInput = document.getElementById('total');
+        const initialInput = document.getElementById('initial');
+        const remainingInput = document.getElementById('remaining');
+
+        // IMPORTANT: Replace this URL with your actual Render backend URL after deployment
+        const BACKEND_URL = 'https://little-angels-backend.onrender.com';
+
+        const packagePrices = {
+            diamond: 39000,
+            gold: 29000,
+            event_no_video: 59000,
+            event_with_video: 79000,
+            platinum: 59000,
+            softcopy: 19000
+        };
+
+        function updateTotal() {
+            const selectedPackage = packageSelect.value;
+            const price = packagePrices[selectedPackage] || 0;
+            totalInput.value = price;
+            calculateRemaining();
+        }
+
+        function calculateRemaining() {
+            const total = parseFloat(totalInput.value) || 0;
+            const initial = parseFloat(initialInput.value) || 0;
+            const remaining = total - initial;
+            remainingInput.value = remaining >= 0 ? remaining : 0;
+        }
+
+        function validatePhones() {
+            const mainPhone = document.getElementById('main-phone').value;
+            const altPhone = document.getElementById('alt-phone').value;
+
+            const isValid = /^\d{9}$/.test(mainPhone) && (altPhone === "" || /^\d{9}$/.test(altPhone));
+            if (!isValid) {
+                alert("Phone numbers must be exactly 9 digits.");
+                return false;
+            }
+            return true;
+        }
+
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            statusDiv.style.backgroundColor = isError ? '#ffebee' : '#e8f5e8';
+            statusDiv.style.color = isError ? '#c62828' : '#2e7d32';
+            statusDiv.style.border = `1px solid ${isError ? '#c62828' : '#2e7d32'}`;
+        }
+
+        async function submitForm(event) {
+            event.preventDefault();
+
+            // Validate phones first
+            if (!validatePhones()) {
+                return false;
+            }
+
+            // Collect all form data
+            const formData = new FormData(document.getElementById('signupForm'));
+            const formObject = {};
+
+            // Convert FormData to object
+            for (let [key, value] of formData.entries()) {
+                if (key === 'interests') {
+                    // Handle multiple checkboxes
+                    if (!formObject[key]) {
+                        formObject[key] = [];
+                    }
+                    formObject[key].push(value);
+                } else {
+                    formObject[key] = value;
+                }
+            }
+
+            // Add calculated fields
+            formObject.total = totalInput.value;
+            formObject.remaining = remainingInput.value;
+
+            try {
+                showStatus('Submitting form...', false);
+
+                const response = await fetch(`${BACKEND_URL}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formObject)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus('Form submitted successfully! Response: ' + result.response, false);
+                    // Optionally reset the form
+                    // document.getElementById('signupForm').reset();
+                } else {
+                    showStatus('Error submitting form: ' + result.error, true);
+                }
+            } catch (error) {
+                showStatus('Network error: ' + error.message, true);
+                console.error('Error:', error);
+            }
+
+            return false;
+        }
+
+        packageSelect.addEventListener('change', updateTotal);
+        initialInput.addEventListener('input', calculateRemaining);
+    </script>
+
+</body>
+
+</html>

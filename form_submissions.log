@@ -1,0 +1,52 @@
+2025-07-23 15:53:07,465 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.101:5000
+2025-07-23 15:53:07,466 - INFO - [33mPress CTRL+C to quit[0m
+2025-07-23 15:53:07,498 - INFO -  * Restarting with watchdog (fsevents)
+2025-07-23 15:53:07,611 - WARNING -  * Debugger is active!
+2025-07-23 15:53:07,617 - INFO -  * Debugger PIN: 119-609-336
+2025-07-23 15:53:43,755 - INFO - 127.0.0.1 - - [23/Jul/2025 15:53:43] "OPTIONS /submit HTTP/1.1" 200 -
+2025-07-23 15:53:43,758 - INFO - ==================================================
+2025-07-23 15:53:43,758 - INFO - NEW FORM SUBMISSION - 2025-07-23 15:53:43
+2025-07-23 15:53:43,758 - INFO - ==================================================
+2025-07-23 15:53:43,758 - INFO - PERSONAL INFORMATION:
+2025-07-23 15:53:43,758 - INFO -   Name: Biftu
+2025-07-23 15:53:43,758 - INFO -   Gender: female
+2025-07-23 15:53:43,758 - INFO -   Age: 23 years, 6 months
+2025-07-23 15:53:43,758 - INFO -   Main Phone: +251913717037
+2025-07-23 15:53:43,758 - INFO -   Alt Phone: +251N/A
+2025-07-23 15:53:43,758 - INFO - PACKAGE INFORMATION:
+2025-07-23 15:53:43,758 - INFO -   Package: diamond
+2025-07-23 15:53:43,758 - INFO -   Choice: option1
+2025-07-23 15:53:43,758 - INFO -   Interests: video, thank_you_card, sign_board
+2025-07-23 15:53:43,758 - INFO - PAYMENT INFORMATION:
+2025-07-23 15:53:43,758 - INFO -   Total Payment: 39000
+2025-07-23 15:53:43,758 - INFO -   Initial Payment: 10000
+2025-07-23 15:53:43,758 - INFO -   Remaining Amount: 29000
+2025-07-23 15:53:43,758 - INFO - RAW FORM DATA:
+2025-07-23 15:53:43,759 - INFO -   {'user_name': 'Biftu', 'gender': 'female', 'age_months': '6', 'age_years': '23', 'main_phone': '913717037', 'alt_phone': '', 'package': 'diamond', 'user_choice': 'option1', 'interests': ['video', 'thank_you_card', 'sign_board'], 'total': '39000', 'initial': '10000', 'remaining': '29000'}
+2025-07-23 15:53:43,759 - INFO - ==================================================
+2025-07-23 15:53:43,759 - INFO - 127.0.0.1 - - [23/Jul/2025 15:53:43] "POST /submit HTTP/1.1" 200 -
+2025-07-23 15:53:49,550 - INFO - 127.0.0.1 - - [23/Jul/2025 15:53:49] "OPTIONS /submit HTTP/1.1" 200 -
+2025-07-23 15:53:49,553 - INFO - ==================================================
+2025-07-23 15:53:49,554 - INFO - NEW FORM SUBMISSION - 2025-07-23 15:53:49
+2025-07-23 15:53:49,554 - INFO - ==================================================
+2025-07-23 15:53:49,554 - INFO - PERSONAL INFORMATION:
+2025-07-23 15:53:49,554 - INFO -   Name: Biftu
+2025-07-23 15:53:49,554 - INFO -   Gender: female
+2025-07-23 15:53:49,554 - INFO -   Age: 23 years, 6 months
+2025-07-23 15:53:49,554 - INFO -   Main Phone: +251913717037
+2025-07-23 15:53:49,554 - INFO -   Alt Phone: +251N/A
+2025-07-23 15:53:49,554 - INFO - PACKAGE INFORMATION:
+2025-07-23 15:53:49,554 - INFO -   Package: diamond
+2025-07-23 15:53:49,554 - INFO -   Choice: option1
+2025-07-23 15:53:49,554 - INFO -   Interests: video, thank_you_card, sign_board
+2025-07-23 15:53:49,554 - INFO - PAYMENT INFORMATION:
+2025-07-23 15:53:49,554 - INFO -   Total Payment: 39000
+2025-07-23 15:53:49,554 - INFO -   Initial Payment: 10000
+2025-07-23 15:53:49,554 - INFO -   Remaining Amount: 29000
+2025-07-23 15:53:49,554 - INFO - RAW FORM DATA:
+2025-07-23 15:53:49,554 - INFO -   {'user_name': 'Biftu', 'gender': 'female', 'age_months': '6', 'age_years': '23', 'main_phone': '913717037', 'alt_phone': '', 'package': 'diamond', 'user_choice': 'option1', 'interests': ['video', 'thank_you_card', 'sign_board'], 'total': '39000', 'initial': '10000', 'remaining': '29000'}
+2025-07-23 15:53:49,554 - INFO - ==================================================
+2025-07-23 15:53:49,555 - INFO - 127.0.0.1 - - [23/Jul/2025 15:53:49] "POST /submit HTTP/1.1" 200 -
